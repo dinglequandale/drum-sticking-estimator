@@ -1,0 +1,4 @@
+.venv/
+__pycache__/
+*.pyc
+vision_sticking_estimator/sticking-grammar-sources/

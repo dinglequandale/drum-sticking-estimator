@@ -1,0 +1,72 @@
+# Dependency friction warning: madmom needs Cython at install time and breaks with numpy>=2.
+# ADTOF needs tensorflow 2.x. Demucs needs torch. Resolve conflicts before writing logic.
+# Tested build order: numpy, Cython, then madmom, then the rest.
+#
+# pip install Cython numpy<2
+# pip install madmom
+# pip install -r requirements.txt
+#
+# POST-INSTALL PATCH (madmom 0.16.1 on Python 3.10+ / numpy 1.24+):
+# After (re)installing madmom you must patch one line in its vendored source,
+# or beat tracking silently falls back to librosa. In
+#   .venv/Lib/site-packages/madmom/features/downbeats.py  (~line 287)
+# replace:  best = np.argmax(np.asarray(results)[:, 1])
+# with:     best = np.argmax([r[1] for r in results])
+# (numpy>=1.24 rejects the ragged-array build.) The collections/np-alias
+# breakages are handled at runtime by src/_madmom_compat.py.
+
+numpy<2.0
+scipy>=1.10.0
+Cython>=3.0.0
+
+# Audio I/O
+librosa>=0.10.0
+soundfile>=0.12.1
+ffmpeg-python>=0.2.0
+imageio-ffmpeg>=0.6.0  # bundles an ffmpeg binary so no system install/PATH is needed
+
+# Vision prong (hand/pose). mediapipe 0.10.35 dropped the legacy mp.solutions
+# API — use the Tasks API (mediapipe.tasks.vision.HandLandmarker), which needs a
+# model file: hand_landmarker.task from
+#   https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task
+# mediapipe pulls in opencv (cv2). NOTE: off-the-shelf MediaPipe Hands is a poor
+# fit for found drum footage (sticks decouple hand from impact; side-view
+# occlusion; motion blur) — see memory project-vision-probe-findings.
+mediapipe>=0.10.35
+
+# Source separation (requires torch — install torch separately for your CUDA version)
+demucs>=4.0.1
+
+# Drum transcription backbone
+# ADTOF is NOT on PyPI — install from source. It ships its trained CRNN weights
+# in the wheel, so no separate weights download is needed. On Windows its
+# setup.py reads README.md as cp1252 and crashes, so force UTF-8 for the build:
+#   PYTHONUTF8=1 pip install --no-deps git+https://github.com/MZehren/ADTOF
+# --no-deps avoids pulling madmom@git (we pin 0.16.1 below); install its
+# remaining pure-Python deps explicitly:
+#   pip install tf_keras pandas matplotlib jellyfish pyunpack pretty_midi beautifulsoup4
+# ADTOF targets Keras 2; with TF>=2.16 (Keras 3) you MUST run with the env var
+# TF_USE_LEGACY_KERAS=1 (stage1_onsets.py sets this at import time).
+tensorflow>=2.13.0,<3.0.0
+tf_keras                  # Keras-2 shim required by ADTOF on TF>=2.16
+pretty_midi>=0.2.9        # read ADTOF's MIDI output
+jellyfish
+pyunpack
+beautifulsoup4
+pandas
+matplotlib
+
+# Beat / downbeat / tempo tracking
+madmom==0.16.1
+
+# Evaluation
+mir_eval>=0.7.0
+
+# Output
+tabulate>=0.9.0
+
+# Web UI server
+fastapi>=0.100.0
+uvicorn[standard]>=0.20.0
+python-multipart>=0.0.6
+aiofiles>=23.0.0

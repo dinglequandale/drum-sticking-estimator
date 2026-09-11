@@ -1,0 +1,104 @@
+[
+  {
+    "time": 0.302,
+    "limb": "R",
+    "tier": "hard",
+    "surface": "snare"
+  },
+  {
+    "time": 0.639,
+    "limb": "L",
+    "tier": "hard",
+    "surface": "snare"
+  },
+  {
+    "time": 1.01,
+    "limb": "R",
+    "tier": "hard",
+    "surface": "snare"
+  },
+  {
+    "time": 1.347,
+    "limb": "F",
+    "tier": "easy",
+    "surface": "kick"
+  },
+  {
+    "time": 1.695,
+    "limb": "L",
+    "tier": "hard",
+    "surface": "snare"
+  },
+  {
+    "time": 2.02,
+    "limb": "R",
+    "tier": "hard",
+    "surface": "snare"
+  },
+  {
+    "time": 2.368,
+    "limb": "F",
+    "tier": "easy",
+    "surface": "kick"
+  },
+  {
+    "time": 2.694,
+    "limb": "F",
+    "tier": "easy",
+    "surface": "kick"
+  },
+  {
+    "time": 3.042,
+    "limb": "L",
+    "tier": "hard",
+    "surface": "snare"
+  },
+  {
+    "time": 3.367,
+    "limb": "R",
+    "tier": "hard",
+    "surface": "snare"
+  },
+  {
+    "time": 3.727,
+    "limb": "L",
+    "tier": "hard",
+    "surface": "snare"
+  },
+  {
+    "time": 4.063,
+    "limb": "R",
+    "tier": "hard",
+    "surface": "snare"
+  },
+  {
+    "time": 4.412,
+    "limb": "L",
+    "tier": "hard",
+    "surface": "snare"
+  },
+  {
+    "time": 4.76,
+    "limb": "R",
+    "tier": "hard",
+    "surface": "snare"
+  },
+  {
+    "time": 5.108,
+    "limb": "L",
+    "tier": "hard",
+    "surface": "snare"
+  },
+  {
+    "time": 5.422,
+    "limb": "R",
+    "tier": "hard",
+    "surface": "snare"
+  },
+  {
+    "time": 5.805,
+    "limb": "F",
+    "tier": "easy",
+    "surface": "kick"
+  }
+]

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Drum Sticking Estimator</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <span class="logo-icon">⬡</span>
+      <span class="logo-text">Sticking Estimator</span>
+    </div>
+    <button class="settings-toggle" id="settings-toggle" title="Settings">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+      </svg>
+      Settings
+    </button>
+  </div>
+</header>
+
+<main>
+
+  <!-- Settings panel (collapsible) -->
+  <div class="settings-panel hidden" id="settings-panel">
+    <div class="settings-inner">
+      <div class="setting-group">
+        <label class="setting-label">Handedness</label>
+        <div class="btn-group" id="handedness-group">
+          <button class="toggle-btn active" data-value="right">Right</button>
+          <button class="toggle-btn" data-value="left">Left</button>
+        </div>
+      </div>
+      <div class="setting-group">
+        <label class="setting-label">Kit style</label>
+        <div class="btn-group" id="style-group">
+          <button class="toggle-btn active" data-value="crossed">Crossed</button>
+          <button class="toggle-btn" data-value="open">Open</button>
+        </div>
+      </div>
+      <div class="setting-group">
+        <label class="setting-label">
+          Ambiguity threshold
+          <span class="setting-hint" id="threshold-val">65%</span>
+        </label>
+        <input type="range" id="threshold-slider" min="40" max="90" value="65" step="5">
+        <p class="setting-desc">Hits below this confidence are flagged <span class="amb-badge">?</span></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload zone -->
+  <div class="upload-zone" id="upload-zone">
+    <input type="file" id="file-input" accept="audio/*,video/*" class="sr-only">
+    <div class="upload-icon">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+        <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
+      </svg>
+    </div>
+    <p class="upload-title">Drop a drum video or audio file</p>
+    <p class="upload-sub">MP4, MOV, WAV, MP3, FLAC — up to 5 min recommended</p>
+    <button class="btn-primary" id="browse-btn">Browse files</button>
+  </div>
+
+  <!-- Editor view (hidden until file loaded) -->
+  <div class="editor hidden" id="editor">
+
+    <div class="editor-top">
+      <!-- Video panel (shown only for video files) -->
+      <div class="video-panel hidden" id="video-panel">
+        <video id="video-player" muted playsinline></video>
+        <div class="video-label" id="video-filename"></div>
+      </div>
+
+      <!-- Waveform panel -->
+      <div class="waveform-panel" id="waveform-panel">
+        <div class="waveform-header">
+          <span class="waveform-label" id="waveform-filename"></span>
+          <div class="waveform-controls">
+            <button class="waveform-btn" id="play-btn" title="Play/Pause">
+              <svg id="play-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+              <svg id="pause-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" class="hidden"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+            </button>
+            <span class="waveform-time" id="waveform-time">0:00.0</span>
+          </div>
+        </div>
+        <div id="waveform"></div>
+        <div class="region-hint" id="region-hint">Drag on the waveform to select a region to analyze</div>
+        <div class="region-info hidden" id="region-info">
+          Selected: <span id="region-start"></span> → <span id="region-end"></span>
+          <button class="clear-region-btn" id="clear-region-btn">✕</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="analyze-bar">
+      <button class="btn-primary btn-analyze" id="analyze-btn" disabled>
+        <span id="analyze-label">Select a region to analyze</span>
+        <span id="analyze-spinner" class="spinner hidden"></span>
+      </button>
+      <span class="analyze-note">Analysis runs on the full clip; the selected window filters what's shown.</span>
+    </div>
+
+  </div>
+
+  <!-- Results (hidden until analysis complete) -->
+  <div class="results hidden" id="results">
+
+    <div class="results-header">
+      <div class="results-meta" id="results-meta"></div>
+      <button class="btn-ghost" id="reupload-btn">↑ New file</button>
+    </div>
+
+    <!-- Per-hit strip -->
+    <div class="section">
+      <div class="section-title">Per-hit assignments</div>
+      <div class="hit-strip-wrap">
+        <div class="hit-strip" id="hit-strip"></div>
+      </div>
+      <div class="hit-legend">
+        <span class="legend-item"><span class="legend-dot limb-L"></span>L — left hand</span>
+        <span class="legend-item"><span class="legend-dot limb-R"></span>R — right hand</span>
+        <span class="legend-item"><span class="legend-dot limb-F"></span>F — foot</span>
+        <span class="legend-item"><span class="legend-dot limb-amb"></span>? — ambiguous</span>
+      </div>
+    </div>
+
+    <!-- Hit detail drawer -->
+    <div class="hit-detail hidden" id="hit-detail">
+      <div class="detail-header">
+        <span class="detail-time" id="detail-time"></span>
+        <span class="detail-source" id="detail-source"></span>
+        <span class="detail-flag hidden" id="detail-flag">⚠ ambiguous</span>
+        <button class="detail-close" id="detail-close">✕</button>
+      </div>
+      <div class="prob-bars" id="prob-bars"></div>
+    </div>
+
+    <!-- Top sequences -->
+    <div class="section" id="sequences-section">
+      <div class="section-title">
+        Top sticking sequences
+        <span class="section-hint">(hand hits only; foot omitted)</span>
+      </div>
+      <div class="sequences-list" id="sequences-list"></div>
+    </div>
+
+    <!-- Patterns -->
+    <div class="section" id="patterns-section">
+      <div class="section-title">Recurring patterns</div>
+      <div class="patterns-list" id="patterns-list"></div>
+    </div>
+
+  </div>
+
+</main>
+
+<script type="module" src="/app.js"></script>
+</body>
+</html>

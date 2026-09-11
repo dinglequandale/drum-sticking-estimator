@@ -1,0 +1,26 @@
+---
+name: project-ergo-diagnosis-2026-07-04
+description: "2026-07-04 diagnosis of ergonomic_sticking_estimator: confidently-wrong on hihat grooves (no ostinato concept, crossed-style unrepresentable, impossible same-hand near-chords), paradiddle smoke case regressed to RLLR, over-segmentation incentive, flip-redecode confidence should become forward-backward + factored pattern/parity output"
+metadata: 
+  node_type: memory
+  type: project
+  originSessionId: 0d48d524-79cf-452a-97d6-48e185b7b14a
+---
+
+Diagnosis session on [[project-two-project-split]]'s ACTIVE ergonomic project. New **demonstrated** failures (probes, 2026-07-04):
+
+1. **Confidently wrong on the canonical groove** (worst finding). 8th-note hihat ostinato + snare backbeat decodes as hand-to-hand ALTERNATION on the hihat (R L R L, conf 0.8–0.96) and gives the snare backbeat **R — 20 ms after an R hihat hit** (physically impossible). Causes: (a) `pair_feasibility` REWARDS slow same-surface alternation (frac−0.5 < 0), so any slow one-surface stream alternates — right for snare exercises, wrong for timekeeping; no "ride one hand on the ostinato surface" concept exists; (b) the hard double-floor 3.0 penalty applies only SAME-surface — cross-surface same-hand at 20 ms pays only soft reach (~0.58), so impossible near-chords slip through; Stage-4 `admissible` sets are computed but **never read** by `decode_stream` (dead machinery); (c) `_side_affinity` penalizes R on kit-left surfaces → pushes hihat to L, i.e. encodes OPEN-handed play while config says crossed; `NATURAL_HAND` (unused here) is also inverted (right_crossed hihat should be R). Crossed style is not expressible by pure geometry — needs an explicit convention/term.
+
+2. **Paradiddle smoke case regressed**: `python -m src.decoder` case 1 (accented paradiddle) now yields `R L L R` ×4 with 12/16 flagged, avg_conf 0.59 — step-4 terms (side affinity/reach) or the metric-start bonus broke the flagship accent-selects-template story. Related wart: `w_metric_start` is a per-cell BONUS (−0.5·strength) → the decoder is PAID to over-segment into many small cells starting on strong positions (feasibility is segmentation-invariant so hands may survive, but template identity/margins are distorted).
+
+3. **Confidence architecture**: per-hit confidence = 2 forced-flip FULL re-decodes per hand strike (O(n²), Python-slow on real clips) and is max-margin, not posterior mass. Fix: one semi-Markov **forward-backward** pass → exact marginals; then implement the banked [[project-two-project-split]] key insight — factor output into **relative-pattern confidence** (per-cell template margin, which the design doc promised but code never computes) × **absolute-parity confidence** (global mirror margin). `temp=1.0` is uncalibrated so probabilities are unitless.
+
+4. **Repetition unexploited**: no self-similarity coupling — identical repeated figures can flip parity between occurrences; repetition is the cheapest large accuracy/consistency lever (resolve pattern once, accumulate parity evidence).
+
+5. **Eval vacuum**: end-to-end probes lived only in session scratchpad (LOST — probe_ergo2.py is gone); no committed eval harness in the ergonomic project (vision has synth_eval.py, ergonomic has only __main__ smoke checks); inter-drummer ~10-clip set (the design's §5 eval) still uncollected — weights (w_side 0.3, fallback_tax 0.4, idiom costs) are vibes until then.
+
+6. Smaller gaps: `dynamic_reference` is clip-global (design says local window) and not per-surface (hihat quieter than snare confounds accents); `Template.cyclic` is defined but never used (no rotations/pickup phases); vocabulary lacks paradiddle inversions, six-stroke roll, flams (pending grace clustering); cells can span rests unpenalized; chords rely accidentally on the (broken, see 1b) speed physics — Stage-4 "spatial exclusivity" comment was never implemented.
+
+Ranked improvement levers: (1) groove/ostinato layer + crossed-style fix + hard cross-surface floor; (2) forward-backward + factored pattern/parity confidence; (3) repetition coupling; (4) committed eval harness + inter-drummer set, then calibrate.
+
+**Implementation handoff WRITTEN (same session): `ergonomic_sticking_estimator/HANDOFF_V2_FIXES.md`** — 6 phases for a weaker model, harness-first (Phase 0 `src/synth_checks.py` with cases A–I and an EXPECTED_FAIL set that must end empty): P1 cross-surface hard floor + Stage-4 docstring honesty; P2 metric-start→weak-start penalty (w=0.3), `max(0, frac−0.5)` de-subsidized slow alternation, run penalty speed-scaled (0.15+0.85·frac), NATURAL_HAND hihat entries fixed + convention-over-geometry for hihat/cymbal only, local per-surface dynamic reference (±4 s); P3 ostinato layer (cymbal-class only, ≥6 hits, IOI CV ≤0.3; riding free at ioi≥floor, switch cost 0.8); P4 semi-Markov forward-backward marginals replacing O(n²) flip re-decodes + `pattern_confidence` per hit (conditioned on first-hit parity) + clip `parity_confidence` (full-mirror Gibbs), flags key off pattern; P5 two-pass repetition discount (signature-grouped, exact-tokens only so mirrors don't get it, w_repeat 0.3 ≤ fallback_tax, only confident occurrences vote); P6 committed `eval_samples.py` on sample_2 (eyeball, no assertions). Snare deliberately excluded from timekeeping surfaces (Case E guards it).
